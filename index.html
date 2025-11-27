@@ -6,22 +6,19 @@
 
   <title>EWS Longsor – Realtime Dashboard</title>
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Inter Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&display=swap" rel="stylesheet">
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     body {
       font-family: "Inter", sans-serif;
       background: #0c0c0d;
+      color: #e5e7eb;
     }
     .glass {
       background: rgba(255, 255, 255, 0.06);
@@ -29,201 +26,301 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
     }
     .title-gradient {
-      background: linear-gradient(to right, #ffffff, #777);
+      background: linear-gradient(to right, #ffffff, #9ca3af);
       -webkit-background-clip: text;
       color: transparent;
+    }
+    /* Animasi kedip untuk warning */
+    .blink {
+      animation: blinker 1.5s linear infinite;
+    }
+    @keyframes blinker {
+      50% { opacity: 0.5; }
     }
   </style>
 </head>
 
-<header class="w-full p-6 border-b border-white/10 bg-black/40 backdrop-blur-md">
-  <div class="flex items-center space-x-4 mb-3 mr-2 justify-center">
-    <img src="Logo-UMKT-1.png" alt="Logo Kampus" class="h-20 w-21 rounded-lg p-1">
-    <img src="brida.png" alt="Logo ESP32" class="h-20 w-21 rounded-lg p-1">
-    <img src="brida1.png" alt="Logo ESP32" class="h-20 w-21 rounded-lg p-1">
-  </div>
-</header>
+<body>
 
-<body class="text-gray-200">
-
-  <!-- HEADER -->
-  <header class="w-full p-6 border-b border-white/10 bg-black/40 backdrop-blur-md justify-center flex mb-6">
-    <h1 class="text-3xl font-light ">EWS – Realtime Monitoring</h1>
+  <header class="w-full p-4 border-b border-white/10 bg-black/40 backdrop-blur-md">
+    <div class="flex items-center justify-center space-x-4">
+      <img src="Logo-UMKT-1.png" alt="Logo Kampus" class="h-16 w-auto rounded p-1 bg-white/10">
+      <img src="brida.png" alt="Logo Mitra 1" class="h-16 w-auto rounded p-1 bg-white/10">
+      <img src="brida1.png" alt="Logo Mitra 2" class="h-16 w-auto rounded p-1 bg-white/10">
+    </div>
   </header>
 
-  <!-- MAIN -->
-  <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <header class="w-full py-6 border-b border-white/10 bg-black/40 backdrop-blur-md flex justify-center mb-6">
+    <h1 class="text-3xl font-light tracking-wide text-white">EWS – Realtime Monitoring</h1>
+  </header>
 
-    <!-- STATUS CARD -->
-    <div class="glass rounded-2xl p-6 hover:border-white/30 transition">
-      <h2 class="text-xl font-light title-gradient">Status Sensor</h2>
+  <div class="px-6 pb-6 grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
 
-      <div class="mt-5 space-y-5">
-        <div class="flex justify-between items-center">
-          <span>Getaran</span>
-          <span id="statVibration" class="px-3 py-1 rounded-full text-sm bg-gray-700">-</span>
+    <div class="glass rounded-2xl p-6 shadow-lg border-t border-white/10">
+      <h2 class="text-xl font-medium title-gradient mb-6">Status Sensor</h2>
+
+      <div class="space-y-6">
+        <div class="flex justify-between items-center pb-4 border-b border-white/5">
+          <span class="text-gray-400">Getaran (Event)</span>
+          <span id="statVibration" class="px-3 py-1 rounded-full text-sm font-semibold bg-gray-700 text-gray-300">Loading...</span>
         </div>
 
-        <div class="flex justify-between items-center">
-          <span>Kemiringan (Gyro)</span>
-          <span id="statGyro" class="px-3 py-1 rounded-full text-sm bg-gray-700">-</span>
+        <div class="flex justify-between items-center pb-4 border-b border-white/5">
+          <span class="text-gray-400">Total Miring</span>
+          <span id="statGyro" class="px-3 py-1 rounded-full text-sm font-semibold bg-gray-700 text-gray-300">Loading...</span>
         </div>
 
-        <div class="flex justify-between items-center">
-          <span>Kelembapan Tanah</span>
-          <span id="statSoil" class="px-3 py-1 rounded-full text-sm bg-gray-700">-</span>
+        <div class="flex justify-between items-center pb-4 border-b border-white/5">
+          <span class="text-gray-400">Kelembapan Tanah</span>
+          <span id="statSoil" class="px-3 py-1 rounded-full text-sm font-semibold bg-gray-700 text-gray-300">Loading...</span>
+        </div>
+        
+        <div class="pt-2 text-center">
+             <div class="text-xs text-gray-500 mb-1">STATUS KONEKSI</div>
+             <div id="connStatus" class="text-yellow-500 font-mono text-sm font-bold">Connecting...</div>
         </div>
       </div>
     </div>
 
-    <!-- CHART GETAR -->
-    <div class="glass rounded-2xl col-span-2 p-6">
-      <h2 class="text-xl font-light title-gradient">Grafik Getaran</h2>
-      <canvas id="chartVibration" class="mt-4"></canvas>
+    <div class="glass rounded-2xl col-span-2 p-6 shadow-lg border-t border-white/10">
+      <h2 class="text-xl font-medium title-gradient mb-2">Grafik Getaran</h2>
+      <div class="relative h-64 w-full">
+        <canvas id="chartVibration"></canvas>
+      </div>
     </div>
 
-    <!-- CHART GYRO -->
-    <div class="glass rounded-2xl col-span-2 p-6">
-      <h2 class="text-xl font-light title-gradient">Grafik Kemiringan (Roll/Pitch/Yaw)</h2>
-      <canvas id="chartGyro" class="mt-4"></canvas>
+    <div class="glass rounded-2xl col-span-2 p-6 shadow-lg border-t border-white/10">
+      <h2 class="text-xl font-medium title-gradient mb-2">Grafik Kemiringan (X/Y/Z)</h2>
+      <div class="relative h-64 w-full">
+        <canvas id="chartGyro"></canvas>
+      </div>
     </div>
 
-    <!-- CHART SOIL -->
-    <div class="glass rounded-2xl col-span-2 p-6">
-      <h2 class="text-xl font-light title-gradient">Grafik Kelembapan Tanah</h2>
-      <canvas id="chartMoisture" class="mt-4"></canvas>
+    <div class="glass rounded-2xl col-span-2 p-6 shadow-lg border-t border-white/10">
+      <h2 class="text-xl font-medium title-gradient mb-2">Grafik Kelembapan Tanah</h2>
+      <div class="relative h-64 w-full">
+        <canvas id="chartMoisture"></canvas>
+      </div>
     </div>
 
   </div>
 
-  <!-- FOOTER -->
-  <footer class="text-center py-6 text-gray-500 text-sm">
-    © 2025 EWS Longsor • ESP32 • Supabase • TailwindCSS • Chart.js
+  <footer class="text-center py-8 text-gray-600 text-sm border-t border-white/5 mt-8">
+    © 2025 EWS Longsor System • Powered by ESP32 & Supabase
   </footer>
 
   <script>
+    // ============================================================
+    // KONFIGURASI ROBUSTNESS
+    // ============================================================
+    const MAX_LATENCY_ALLOWANCE = 15; // Detik. Jika > 15 detik tidak ada data, dianggap OFFLINE/LAG.
+    let lastDataTime = 0;             // Timestamp data terakhir diterima
+    let connectionStatus = "DISCONNECTED"; // Status koneksi ke Supabase
+
     // ------------------------------------------------------------
-    // 1. INIT SUPABASE (WAJIB gunakan window.supabase)
+    // 1. INIT SUPABASE
     // ------------------------------------------------------------
     const supabase = window.supabase.createClient(
       "https://qvojutantstozafrrvel.supabase.co",
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2b2p1dGFudHN0b3phZnJydmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5OTE5MzksImV4cCI6MjA3OTU2NzkzOX0.u8_jrS9PGopT3cpmh3sSPMCiWQZeX84bj4a_J1i-kKY"
     );
 
-    console.log("Supabase client:", supabase);
+    // ------------------------------------------------------------
+    // 2. CHART SETUP (Optimasi Performa)
+    // ------------------------------------------------------------
+    const labels = Array.from({ length: 20 }, (_, x) => ""); 
 
-    // ------------------------------------------------------------
-    // 2. CHART SETUP
-    // ------------------------------------------------------------
-    const labels = Array.from({ length: 20 }, (_, x) => x);
+    // Opsi grafik: matikan animasi agar responsif & ringan
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false, 
+        scales: {
+            x: { ticks: { color: "#666" }, grid: { color: "rgba(255,255,255,0.05)" } },
+            y: { ticks: { color: "#aaa" }, grid: { color: "rgba(255,255,255,0.05)" } }
+        },
+        plugins: { legend: { labels: { color: "#ccc" } } },
+        elements: { point: { radius: 2 } } 
+    };
 
     function createChart(id, label, color = "#fff") {
       return new Chart(document.getElementById(id), {
         type: "line",
         data: {
-          labels,
-          datasets: [{ label, data: Array(20).fill(0), borderColor: color, borderWidth: 1.4 }]
+          labels: [...labels],
+          datasets: [{ label, data: Array(20).fill(null), borderColor: color, borderWidth: 2, tension: 0.3 }]
         },
-        options: {
-          scales: {
-            x: { ticks: { color: "#aaa" } },
-            y: { ticks: { color: "#aaa" } }
-          },
-          plugins: { legend: { labels: { color: "#ccc" } } }
-        }
+        options: commonOptions
       });
     }
 
-    const chartVibration = createChart("chartVibration", "Getaran");
-    const chartMoisture = createChart("chartMoisture", "Kelembapan (%)", "#00eaff");
+    const chartVibration = createChart("chartVibration", "Intensitas Getaran", "#ff5e5e");
+    const chartMoisture = createChart("chartMoisture", "Nilai Sensor Tanah (ADC)", "#00eaff");
 
     const chartGyro = new Chart(document.getElementById("chartGyro"), {
       type: "line",
       data: {
-        labels,
+        labels: [...labels],
         datasets: [
-          { label: "Roll",  data: Array(20).fill(0), borderColor: "#fff",  borderWidth: 1.4 },
-          { label: "Pitch", data: Array(20).fill(0), borderColor: "#888", borderWidth: 1.4 },
-          { label: "Yaw",   data: Array(20).fill(0), borderColor: "#444", borderWidth: 1.4 }
+          { label: "X (Roll)",  data: Array(20).fill(null), borderColor: "#ff00dd", borderWidth: 1.5, tension: 0.3 },
+          { label: "Y (Pitch)", data: Array(20).fill(null), borderColor: "#00ff9d", borderWidth: 1.5, tension: 0.3 },
+          { label: "Z (Yaw)",   data: Array(20).fill(null), borderColor: "#fff700", borderWidth: 1.5, tension: 0.3 }
         ]
       },
-      options: {
-        scales: {
-          x: { ticks: { color: "#aaa" } },
-          y: { ticks: { color: "#aaa" } }
-        },
-        plugins: { legend: { labels: { color: "#ccc" } } }
-      }
+      options: commonOptions
     });
 
-
-    // Utility push data
-    function push(chart, value) {
-      chart.data.datasets[0].data.push(value);
-      chart.data.datasets[0].data.shift();
-      chart.update();
-    }
-
-    function pushGyro(r, p, y) {
-      chartGyro.data.datasets[0].data.push(r);
-      chartGyro.data.datasets[1].data.push(p);
-      chartGyro.data.datasets[2].data.push(y);
-      chartGyro.data.datasets.forEach(ds => ds.data.shift());
-      chartGyro.update();
-    }
-
     // ------------------------------------------------------------
-    // 3. STATUS BADGE
+    // 3. UI HELPERS & WATCHDOG
     // ------------------------------------------------------------
+    
     function setBadge(id, text, type) {
       const badge = document.getElementById(id);
       badge.textContent = text;
+      // Reset class dasar
+      badge.className = "px-3 py-1 rounded-full text-sm font-semibold transition-all duration-300 shadow-md ";
+      
+      if (type === "danger") {
+         badge.className += "bg-red-600 text-white shadow-red-500/50 animate-pulse";
+      } else if (type === "warn") {
+         badge.className += "bg-yellow-500 text-black shadow-yellow-500/50";
+      } else if (type === "offline") {
+         badge.className += "bg-gray-600 text-gray-400"; // Warna mati/abu-abu
+      } else {
+         badge.className += "bg-green-600 text-white shadow-green-500/30";
+      }
+    }
 
-      badge.className =
-        "px-3 py-1 rounded-full text-sm " +
-        (type === "danger"
-          ? "bg-red-600/70"
-          : type === "warn"
-          ? "bg-yellow-600/70"
-          : "bg-green-600/70");
+    function updateConnectionDisplay(status, msg) {
+        const el = document.getElementById("connStatus");
+        if (status === "ONLINE") {
+            el.innerHTML = `🟢 LIVE | ${msg}`;
+            el.className = "text-green-400 font-mono text-sm font-bold";
+        } else if (status === "LAG") {
+            el.innerHTML = `🟡 DATA TERLAMBAT (${msg})`;
+            el.className = "text-yellow-400 font-mono text-sm font-bold blink";
+        } else {
+            el.innerHTML = `🔴 TERPUTUS / OFFLINE`;
+            el.className = "text-red-500 font-mono text-sm font-bold";
+        }
+    }
+
+    // --- WATCHDOG SYSTEM (Jantung Robustness) ---
+    // Fungsi ini berjalan tiap 1 detik untuk mengecek latensi data
+    setInterval(() => {
+        const now = Date.now();
+        const diffSeconds = Math.floor((now - lastDataTime) / 1000);
+
+        // Jika koneksi websocket supabase putus
+        if (connectionStatus !== "SUBSCRIBED" && connectionStatus !== "CHANNEL_ERROR") {
+             // Biarkan status apa adanya saat inisialisasi awal
+        }
+
+        if (lastDataTime === 0) {
+            updateConnectionDisplay("WAIT", "Menunggu data pertama...");
+            return;
+        }
+
+        if (diffSeconds > MAX_LATENCY_ALLOWANCE) {
+            // Jika data > 15 detik tidak masuk -> Anggap Sensor Mati / Internet Lemot
+            updateConnectionDisplay("LAG", `${diffSeconds} detik lalu`);
+            setAllSensorsOffline(); // Ubah badge jadi abu-abu agar user sadar
+        } else {
+            // Data Fresh
+            updateConnectionDisplay("ONLINE", "Update: " + (diffSeconds < 1 ? "Baru saja" : `${diffSeconds}d lalu`));
+        }
+    }, 1000);
+
+    function setAllSensorsOffline() {
+        setBadge("statVibration", "Data Lama / Offline", "offline");
+        setBadge("statGyro", "Data Lama / Offline", "offline");
+        setBadge("statSoil", "Data Lama / Offline", "offline");
     }
 
     // ------------------------------------------------------------
-    // 4. REALTIME LISTENER
+    // 4. DATA PROCESSING
     // ------------------------------------------------------------
-    supabase
+
+    function processData(d) {
+        // Update Timestamp Terakhir (Penting untuk Watchdog)
+        lastDataTime = Date.now(); 
+
+        // 1. Update Grafik (Shift array dan push data baru)
+        [chartVibration, chartMoisture].forEach(c => c.data.datasets[0].data.shift());
+        chartVibration.data.datasets[0].data.push(d.vibration);
+        chartMoisture.data.datasets[0].data.push(d.moisture);
+
+        chartGyro.data.datasets.forEach(ds => ds.data.shift());
+        chartGyro.data.datasets[0].data.push(d.gyro_x);
+        chartGyro.data.datasets[1].data.push(d.gyro_y);
+        chartGyro.data.datasets[2].data.push(d.gyro_z);
+
+        chartVibration.update();
+        chartMoisture.update();
+        chartGyro.update();
+
+        // 2. Update Status (Hanya update badge jika data masuk)
+        
+        // Logika Getaran
+        if (d.vibration >= 6) setBadge("statVibration", "BAHAYA (Aktivitas Tinggi)", "danger");
+        else if (d.vibration >= 1) setBadge("statVibration", "Terdeteksi", "warn");
+        else setBadge("statVibration", "Aman", "safe");
+
+        // Logika Miring (Hitung Vektor Total)
+        let totalTilt = Math.sqrt(Math.pow(d.gyro_x, 2) + Math.pow(d.gyro_y, 2));
+        if (totalTilt > 30) setBadge("statGyro", `${totalTilt.toFixed(1)}° - BAHAYA`, "danger");
+        else if (totalTilt > 10) setBadge("statGyro", `${totalTilt.toFixed(1)}° - WASPADA`, "warn");
+        else setBadge("statGyro", `${totalTilt.toFixed(1)}° - Stabil`, "safe");
+
+        // Logika Tanah (Sensor Kapasitif: Rendah=Basah, Tinggi=Kering)
+        if (d.moisture < 1100) setBadge("statSoil", `${d.moisture} - Jenuh (Bahaya)`, "danger");
+        else if (d.moisture < 1600) setBadge("statSoil", `${d.moisture} - Basah`, "warn");
+        else setBadge("statSoil", `${d.moisture} - Normal`, "safe");
+    }
+
+    // ------------------------------------------------------------
+    // 5. FETCH & SUBSCRIBE
+    // ------------------------------------------------------------
+
+    // Ambil data history awal (20 data terakhir)
+    async function fetchInitialHistory() {
+        const { data, error } = await supabase
+            .from('ews_readings')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (data) {
+            const history = data.reverse(); 
+            history.forEach(row => processData(row));
+            // Set timestamp ke waktu sekarang agar tidak langsung dianggap offline saat load
+            lastDataTime = Date.now(); 
+        }
+    }
+    fetchInitialHistory();
+
+    // Subscribe Realtime
+    const channel = supabase
       .channel("ews_realtime")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "ews_readings" },
         (payload) => {
-          const d = payload.new;
-
-          console.log("Realtime data:", d);
-
-          // update charts
-          push(chartVibration, d.vibration);
-          push(chartMoisture, d.moisture);
-          pushGyro(d.gyro_x, d.gyro_y, d.gyro_z);
-
-          // update status
-          setBadge("statVibration", d.vibration == 1 ? "Getaran Terdeteksi" : "Normal",
-                   d.vibration == 1 ? "danger" : "safe");
-
-          let tiltDanger = Math.abs(d.gyro_x) > 30 || Math.abs(d.gyro_y) > 30;
-          setBadge("statGyro", tiltDanger ? "Miring / Waspada" : "Stabil",
-                   tiltDanger ? "warn" : "safe");
-
-          setBadge(
-            "statSoil",
-            d.moisture < 30 ? "Tanah Kering" :
-            d.moisture > 80 ? "Tanah Jenuh" : "Normal",
-            d.moisture < 30 || d.moisture > 80 ? "danger" : "safe"
-          );
-
+          processData(payload.new);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+          connectionStatus = status; // Update status global untuk Watchdog
+          console.log("Supabase Status:", status);
+          
+          const statusEl = document.getElementById("connStatus");
+          if (status === "SUBSCRIBED") {
+              // Biarkan Watchdog yang mengurus teks selanjutnya
+          } else {
+              statusEl.innerText = "Reconnecting...";
+              statusEl.className = "text-red-500 font-bold blink";
+          }
+      });
 
   </script>
 
