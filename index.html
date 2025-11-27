@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>EWS Longsor – Realtime Dashboard</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: #0c0c0d;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .title-gradient {
+      background: linear-gradient(to right, #ffffff, #777);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+  </style>
+</head>
+
+<body class="text-gray-200">
+
+  <!-- HEADER -->
+  <header class="w-full p-6 border-b border-white/10 bg-black/40 backdrop-blur-md">
+    <h1 class="text-3xl font-light title-gradient">EWS Longsor – Realtime Monitoring</h1>
+    <p class="text-gray-400 text-sm mt-1">ESP32 → MPU6050 → Soil → Getaran → Supabase → Dashboard</p>
+  </header>
+
+  <!-- MAIN -->
+  <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- STATUS CARD -->
+    <div class="glass rounded-2xl p-6 hover:border-white/30 transition">
+      <h2 class="text-xl font-light title-gradient">Status Sensor</h2>
+
+      <div class="mt-5 space-y-5">
+        <div class="flex justify-between items-center">
+          <span>Getaran</span>
+          <span id="statVibration" class="px-3 py-1 rounded-full text-sm bg-gray-700">-</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span>Kemiringan (Gyro)</span>
+          <span id="statGyro" class="px-3 py-1 rounded-full text-sm bg-gray-700">-</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span>Kelembapan Tanah</span>
+          <span id="statSoil" class="px-3 py-1 rounded-full text-sm bg-gray-700">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART GETAR -->
+    <div class="glass rounded-2xl col-span-2 p-6">
+      <h2 class="text-xl font-light title-gradient">Grafik Getaran</h2>
+      <canvas id="chartVibration" class="mt-4"></canvas>
+    </div>
+
+    <!-- CHART GYRO -->
+    <div class="glass rounded-2xl col-span-2 p-6">
+      <h2 class="text-xl font-light title-gradient">Grafik Kemiringan (Roll/Pitch/Yaw)</h2>
+      <canvas id="chartGyro" class="mt-4"></canvas>
+    </div>
+
+    <!-- CHART SOIL -->
+    <div class="glass rounded-2xl col-span-2 p-6">
+      <h2 class="text-xl font-light title-gradient">Grafik Kelembapan Tanah</h2>
+      <canvas id="chartMoisture" class="mt-4"></canvas>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="text-center py-6 text-gray-500 text-sm">
+    © 2025 EWS Longsor • ESP32 • Supabase • TailwindCSS • Chart.js
+  </footer>
+
+  <script>
+    // ------------------------------------------------------------
+    // 1. INIT SUPABASE (WAJIB gunakan window.supabase)
+    // ------------------------------------------------------------
+    const supabase = window.supabase.createClient(
+      "https://qvojutantstozafrrvel.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2b2p1dGFudHN0b3phZnJydmVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5OTE5MzksImV4cCI6MjA3OTU2NzkzOX0.u8_jrS9PGopT3cpmh3sSPMCiWQZeX84bj4a_J1i-kKY"
+    );
+
+    console.log("Supabase client:", supabase);
+
+    // ------------------------------------------------------------
+    // 2. CHART SETUP
+    // ------------------------------------------------------------
+    const labels = Array.from({ length: 20 }, (_, x) => x);
+
+    function createChart(id, label, color = "#fff") {
+      return new Chart(document.getElementById(id), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{ label, data: Array(20).fill(0), borderColor: color, borderWidth: 1.4 }]
+        },
+        options: {
+          scales: {
+            x: { ticks: { color: "#aaa" } },
+            y: { ticks: { color: "#aaa" } }
+          },
+          plugins: { legend: { labels: { color: "#ccc" } } }
+        }
+      });
+    }
+
+    const chartVibration = createChart("chartVibration", "Getaran");
+    const chartMoisture = createChart("chartMoisture", "Kelembapan (%)", "#00eaff");
+
+    const chartGyro = new Chart(document.getElementById("chartGyro"), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          { label: "Roll",  data: Array(20).fill(0), borderColor: "#fff",  borderWidth: 1.4 },
+          { label: "Pitch", data: Array(20).fill(0), borderColor: "#888", borderWidth: 1.4 },
+          { label: "Yaw",   data: Array(20).fill(0), borderColor: "#444", borderWidth: 1.4 }
+        ]
+      },
+      options: {
+        scales: {
+          x: { ticks: { color: "#aaa" } },
+          y: { ticks: { color: "#aaa" } }
+        },
+        plugins: { legend: { labels: { color: "#ccc" } } }
+      }
+    });
+
+
+    // Utility push data
+    function push(chart, value) {
+      chart.data.datasets[0].data.push(value);
+      chart.data.datasets[0].data.shift();
+      chart.update();
+    }
+
+    function pushGyro(r, p, y) {
+      chartGyro.data.datasets[0].data.push(r);
+      chartGyro.data.datasets[1].data.push(p);
+      chartGyro.data.datasets[2].data.push(y);
+      chartGyro.data.datasets.forEach(ds => ds.data.shift());
+      chartGyro.update();
+    }
+
+    // ------------------------------------------------------------
+    // 3. STATUS BADGE
+    // ------------------------------------------------------------
+    function setBadge(id, text, type) {
+      const badge = document.getElementById(id);
+      badge.textContent = text;
+
+      badge.className =
+        "px-3 py-1 rounded-full text-sm " +
+        (type === "danger"
+          ? "bg-red-600/70"
+          : type === "warn"
+          ? "bg-yellow-600/70"
+          : "bg-green-600/70");
+    }
+
+    // ------------------------------------------------------------
+    // 4. REALTIME LISTENER
+    // ------------------------------------------------------------
+    supabase
+      .channel("ews_realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "ews_readings" },
+        (payload) => {
+          const d = payload.new;
+
+          console.log("Realtime data:", d);
+
+          // update charts
+          push(chartVibration, d.vibration);
+          push(chartMoisture, d.moisture);
+          pushGyro(d.gyro_x, d.gyro_y, d.gyro_z);
+
+          // update status
+          setBadge("statVibration", d.vibration == 1 ? "Getaran Terdeteksi" : "Normal",
+                   d.vibration == 1 ? "danger" : "safe");
+
+          let tiltDanger = Math.abs(d.gyro_x) > 30 || Math.abs(d.gyro_y) > 30;
+          setBadge("statGyro", tiltDanger ? "Miring / Waspada" : "Stabil",
+                   tiltDanger ? "warn" : "safe");
+
+          setBadge(
+            "statSoil",
+            d.moisture < 30 ? "Tanah Kering" :
+            d.moisture > 80 ? "Tanah Jenuh" : "Normal",
+            d.moisture < 30 || d.moisture > 80 ? "danger" : "safe"
+          );
+
+        }
+      )
+      .subscribe();
+
+  </script>
+
+</body>
+</html>
